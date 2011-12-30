@@ -38,6 +38,19 @@ namespace Recepcion
             cargarServicios();
             idAdmin = id;
 
+            try
+            {
+                core = new GriauleFingerprintLibrary.FingerprintCore();
+
+                core.onStatus += new GriauleFingerprintLibrary.StatusEventHandler(core_onStatus);
+                core.onImage += new GriauleFingerprintLibrary.ImageEventHandler(core_onImage);
+                core.Initialize();
+                core.CaptureInitialize();
+            }
+            catch
+            {
+            }
+
             //fechaNacimiento.Value = DateTime.Now;
 
             //mensualidad.Text = this.getFecha();
@@ -101,21 +114,21 @@ namespace Recepcion
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            if (!isEdit)
-            {
-                try
-                {
-                    core = new GriauleFingerprintLibrary.FingerprintCore();
+            //if (!isEdit)
+            //{
+            //    try
+            //    {
+            //        core = new GriauleFingerprintLibrary.FingerprintCore();
 
-                    core.onStatus += new GriauleFingerprintLibrary.StatusEventHandler(core_onStatus);
-                    core.onImage += new GriauleFingerprintLibrary.ImageEventHandler(core_onImage);
-                    core.Initialize();
-                    core.CaptureInitialize();
-                }
-                catch
-                {
-                }
-            }
+            //        core.onStatus += new GriauleFingerprintLibrary.StatusEventHandler(core_onStatus);
+            //        core.onImage += new GriauleFingerprintLibrary.ImageEventHandler(core_onImage);
+            //        core.Initialize();
+            //        core.CaptureInitialize();
+            //    }
+            //    catch
+            //    {
+            //    }
+            //}
         }
 
 
@@ -132,20 +145,20 @@ namespace Recepcion
                 switch (template.Quality)
                 {
                     case 0:
-                        MessageBox.Show("Huella de mala calidad favor de volver a poner el dedo");
+                        MessageBox.Show("Huella de mala calidad favor de volver a poner el dedo", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     case 1:
-                        MessageBox.Show("La huella es de una calidad media, intente nuevamente");
+                        MessageBox.Show("La huella es de una calidad media, intente nuevamente", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     case 2:
-                        MessageBox.Show("Huella con buena calidad");
+                        MessageBox.Show("Huella con buena calidad", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         HuellaOK = true;
                         break;
                 }
             }
             catch(Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -202,12 +215,19 @@ namespace Recepcion
                 {
                     if (!String.IsNullOrEmpty(textBox1.Text))
                     {
-                        //System.IO.File.Copy(foto, @"c:\wamp\www\gym\fotos\", true);
-                        Fotografia = GetFileName(textBox1.Text).Replace(".", DateTime.Now.Ticks.ToString() + ".");
-                        System.IO.File.Move(textBox1.Text, @"c:\wamp\www\gym\fotos\" + Fotografia);
+                        try
+                        {
+                            //System.IO.File.Copy(foto, @"c:\wamp\www\gym\fotos\", true);
+                            Fotografia = GetFileName(textBox1.Text).Replace(".", DateTime.Now.Ticks.ToString() + ".");
+                            //System.IO.File.Move(textBox1.Text, @"c:\wamp\www\gym\fotos\" + Fotografia);
+                            System.IO.File.Copy(textBox1.Text, @"c:\wamp\www\gym\fotos\" + Fotografia);
 
-                        //System.IO.File.Copy(textBox1.Text, @"C:\xampp\xampplite\htdocs\gym\fotos\"+Fotografia, true);
-
+                            //System.IO.File.Copy(textBox1.Text, @"C:\xampp\xampplite\htdocs\gym\fotos\"+Fotografia, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
 
                     }
                 }
@@ -306,13 +326,12 @@ namespace Recepcion
                                 cmd3.ExecuteNonQuery();
                             }
                         }
-
-                        MessageBox.Show("Usuario Agregado");
+                        MessageBox.Show("Usuario Agregado", "Informacion", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         clean();
                     }
                     else
                     {
-                        MessageBox.Show("No se pudo agregar el usuario");
+                        MessageBox.Show("No se pudo agregar el usuario", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
                 }
@@ -323,7 +342,7 @@ namespace Recepcion
             }
             else
             {
-                MessageBox.Show("Por favor capture su huella.");
+                MessageBox.Show("Por favor capture su huella", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -332,21 +351,22 @@ namespace Recepcion
         {
             if (!String.IsNullOrEmpty(nombre.Text))
             {
+
                 try
                 {
                     if (!String.IsNullOrEmpty(textBox1.Text))
                     {
-                        //System.IO.File.Copy(foto, @"c:\wamp\www\gym\fotos\", true);
                         Fotografia = GetFileName(textBox1.Text).Replace(".", DateTime.Now.Ticks.ToString() + ".");
-                        System.IO.File.Move(textBox1.Text, @"c:\wamp\www\gym\fotos\" + Fotografia);
-
-                        //System.IO.File.Copy(textBox1.Text, @"C:\xampp\xampplite\htdocs\gym\fotos\"+Fotografia, true);
-
-
+                        System.IO.File.Copy(textBox1.Text, @"c:\wamp\www\gym\fotos\" + Fotografia);
+                    }
+                    else
+                    {
+                        Fotografia = usuario.Foto;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 
                 Conexion = new Conexion_MySQL();
@@ -393,40 +413,23 @@ namespace Recepcion
                 {
                     if (cmd.ExecuteNonQuery() > 0)
                     {
-                        try
-                        {
-                            if (!String.IsNullOrEmpty(textBox1.Text))
-                            {
-                                //System.IO.File.Copy(foto, @"c:\wamp\www\gym\fotos\", true);
-                                Fotografia = GetFileName(textBox1.Text).Replace(".", DateTime.Now.Ticks.ToString() + ".");
-                                System.IO.File.Move(textBox1.Text, @"c:\wamp\www\gym\fotos\" + Fotografia);
-
-                                //System.IO.File.Copy(textBox1.Text, @"C:\xampp\xampplite\htdocs\gym\fotos\"+Fotografia, true);
-
-
-                            }
-                        }
-                        catch
-                        {
-                        }
-
-                        MessageBox.Show("Usuario Editado");
+                        MessageBox.Show("Usuario Editado", "Informacion", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         //clean();
                     }
                     else
                     {
-                        MessageBox.Show("No se pudo editar el usuario");
+                        MessageBox.Show("No se pudo editar el usuario", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
                 }
                 catch (MySqlException ex)
                 {
-
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             else
             {
-                MessageBox.Show("El nombre/huella no puede estar en blanco.");
+                MessageBox.Show("El nombre/huella no puede estar en blanco.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -473,6 +476,7 @@ namespace Recepcion
         {
             try
             {
+                core.CaptureFinalize();
                 core.Finalizer();
             }
             catch (Exception ex)
@@ -485,6 +489,7 @@ namespace Recepcion
         {
             try
             {
+                core.CaptureFinalize();
                 core.Finalizer();
             }
             catch (Exception ex)
@@ -541,6 +546,11 @@ namespace Recepcion
                     if (Convert.ToBoolean(seleccion.Value))
                     {
                         costo += Convert.ToDouble(row.Cells["Costo"].Value);
+                        subtotal.Text = costo.ToString();
+                    }
+                    else 
+                    {
+                        costo -= Convert.ToDouble(row.Cells["Costo"].Value);
                         subtotal.Text = costo.ToString();
                     }
                 }

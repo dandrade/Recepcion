@@ -169,7 +169,7 @@ namespace Recepcion
 
                                 if (haveHorarios)
                                 {
-
+                                    label4.Text = "";
                                     dataGridView1.DataSource = horarios;
                                     label2.Text = "Bienvenido " + nombreCompleto;
                                     mensualidad.Text = new Rules().ProximoPago(Usuario);
@@ -183,6 +183,7 @@ namespace Recepcion
                             }
                             else if (Rol == "Instructor")
                             {
+                                label4.Text = "";
                                 dataGridView1.DataSource = null;
                                 label2.Text = "Bienvenido " + nombreCompleto;
 
@@ -351,7 +352,8 @@ namespace Recepcion
         {
             try
             {
-                core.Finalizer();
+                //core.Finalizer();
+                core.CaptureFinalize();
             }
             catch
             { 
