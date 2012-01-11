@@ -217,8 +217,8 @@ namespace Recepcion
                     {
 
                         label4.Text = "Usuario no registrado, te invitamos a darte de alta";
-                        dataGridView1.DataSource = null;
-                        label2.Text = "";
+                        
+                        clean();
                     }
                 }
                 //pictureBox1.Image = huella.Image;
@@ -251,7 +251,7 @@ namespace Recepcion
 
         private void clean()
         {
-            int miliseconds = int.Parse(config.AppSettings.Settings["Clean"].Value.ToString());
+            int miliseconds = int.Parse(string.IsNullOrEmpty(config.AppSettings.Settings["Clean"].Value.ToString()) ? "8" : config.AppSettings.Settings["Clean"].Value.ToString());
             System.Threading.Thread.Sleep(miliseconds * 1000);
             label2.Text = "";
             label3.Text = "";
