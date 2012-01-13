@@ -99,13 +99,17 @@ namespace Recepcion
         private void Identificacion_Load(object sender, EventArgs e)
         {
             CheckForIllegalCrossThreadCalls = false;
-            core = new GriauleFingerprintLibrary.FingerprintCore();
+            try
+            {
+                core = new GriauleFingerprintLibrary.FingerprintCore();
 
-            core.onStatus += new GriauleFingerprintLibrary.StatusEventHandler(core_onStatus);
-            core.onImage += new GriauleFingerprintLibrary.ImageEventHandler(core_onImage);
+                core.onStatus += new GriauleFingerprintLibrary.StatusEventHandler(core_onStatus);
+                core.onImage += new GriauleFingerprintLibrary.ImageEventHandler(core_onImage);
 
-            core.Initialize();
-            core.CaptureInitialize();
+                core.Initialize();
+                core.CaptureInitialize();
+            }
+            catch { }
             //fotoGrafia.ImageLocation = @"C:\wamp\www\gym\fotos\Jellyfish634579710106958000.jpg";
         }
 
@@ -127,7 +131,7 @@ namespace Recepcion
 
                 MySqlDataReader reader = this.EjecutarQuery(consulta);
                 core.IdentifyPrepare(template);
-
+                bool match = false;
                 while (reader.Read())
                 {
                     dataTemp = (byte[])reader["template"];
@@ -138,6 +142,12 @@ namespace Recepcion
                     templateTemp.Quality = calidad;
 
                     int result = core.Identify(templateTemp, out precision);
+
+                    string fileName = @"c:\sistema\log.txt";
+                    System.IO.StreamWriter writer = System.IO.File.AppendText(fileName);
+                    writer.WriteLine("precision - " + precision.ToString() + " : result - " + result.ToString());
+                    writer.Close();
+                    
 
                     
                     if (result == 1)
@@ -210,16 +220,16 @@ namespace Recepcion
                             }
 
                         }
-
+                        match = true;
                         break;
                     }
-                    else
-                    {
+                    
+                }
 
-                        label4.Text = "Usuario no registrado, te invitamos a darte de alta";
-                        
-                        clean();
-                    }
+                if(!match)
+                {
+                    label4.Text = "Usuario no registrado, te invitamos a darte de alta";
+                    clean();
                 }
                 //pictureBox1.Image = huella.Image;
 
