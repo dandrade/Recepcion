@@ -64,38 +64,10 @@ namespace Recepcion
         public Identificacion()
         {
             InitializeComponent();
-            //string id = new Rules().isInOut("38");
-            //MessageBox.Show(new Rules().registrarSalida("38").ToString());
-            
-            //this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
-            //this.Height = Screen.PrimaryScreen.Bounds.Height;
-            //this.Width = Screen.PrimaryScreen.Bounds.Width;
-            //this.Left = (Screen.PrimaryScreen.Bounds.Width / 2 - this.Width / 2);
-            //this.Top = (Screen.PrimaryScreen.Bounds.Height / 2 - this.Height / 2);
-
-           // this.getDay(DateTime.Today.DayOfWeek.ToString());
-            //Usuario = "24";
-            //testApp();
+            Log.WriteLog("Inicializando Aplicacion.");
         }
 
-        private void testApp()
-        { 
-            // Ya encontre el usuario por su huella entonces
-            List<Horario> horarios = this.getHorarios("");
-
-            if (horarios.Count > 0)
-            {
-                dataGridView1.DataSource = horarios;
-                label2.Text = "Bienvenido Daniel Andrade";
-                //panel2.Show();
-            }
-            else
-            {
-                // no hay horarios
-                MessageBox.Show("Lo sentimos no contamos con horarios disponibles");
-            }
-        }
-
+       
         private void Identificacion_Load(object sender, EventArgs e)
         {
             CheckForIllegalCrossThreadCalls = false;
@@ -108,9 +80,13 @@ namespace Recepcion
 
                 core.Initialize();
                 core.CaptureInitialize();
+                Log.WriteLog("Lector Iniciado.");
             }
-            catch { }
-            //fotoGrafia.ImageLocation = @"C:\wamp\www\gym\fotos\Jellyfish634579710106958000.jpg";
+            catch (Exception ex)
+            {
+                Log.WriteLog("Error al iniciar el lector - Error: " + ex.Message);
+            }
+            
         }
 
         void core_onImage(object source, GriauleFingerprintLibrary.Events.ImageEventArgs ie)
@@ -119,7 +95,7 @@ namespace Recepcion
             {
                 huella = ie.RawImage;
                 core.Extract(huella, ref template);
-                label4.Text = "Espere, identificando...";
+                label4.Text = "";//"Espere, identificando...";
                 bool haveHorarios = false;
                 string consulta;
                 byte[] dataTemp;
@@ -130,10 +106,13 @@ namespace Recepcion
                 consulta = "select id, rol, concat_ws(' ', nombre, apellidoPaterno, apellidoMaterno) as nombreCompleto, template, calidad_template, foto from usuarios where template is not null and 1 = 1";
 
                 MySqlDataReader reader = this.EjecutarQuery(consulta);
+                
                 core.IdentifyPrepare(template);
                 bool match = false;
+
                 while (reader.Read())
                 {
+                    Log.WriteLog("Recorriendo usuarios.");
                     dataTemp = (byte[])reader["template"];
                     calidad = (int)reader["calidad_template"];
                     templateTemp = new GriauleFingerprintLibrary.DataTypes.FingerprintTemplate();
@@ -143,25 +122,20 @@ namespace Recepcion
 
                     int result = core.Identify(templateTemp, out precision);
 
-                    string fileName = @"c:\sistema\log.txt";
-                    System.IO.StreamWriter writer = System.IO.File.AppendText(fileName);
-                    writer.WriteLine("precision - " + precision.ToString() + " : result - " + result.ToString());
-                    writer.Close();
-                    
-
-                    
                     if (result == 1)
                     {
-                        //
+                        
                         Usuario = reader["id"].ToString();
                         string nombreCompleto = reader["nombreCompleto"].ToString();
                         string rol = reader["rol"].ToString();
                         string foto = reader["foto"].ToString();
                         Rol = rol;
+                        
+                        Log.WriteLog("Encontre al Usuario - " + reader["nombreCompleto"].ToString());
                         string inout = new Rules().isInOut(Usuario);
                         if (inout == "In")
                         {
-
+                            Log.WriteLog(inout);
                             if (Rol == "Cliente")
                             {
                                 List<Horario> horarios = this.getHorarios(Usuario);
@@ -172,9 +146,9 @@ namespace Recepcion
                                 }
                                 else
                                 {
-                                    // no hay horarios
+                                    Log.WriteLog("No hay horarios disponibles.");
                                     MessageBox.Show("Lo sentimos no contamos con horarios disponibles");
-                                    clean();
+                                    //clean();
                                 }
 
                                 if (haveHorarios)
@@ -183,12 +157,12 @@ namespace Recepcion
                                     dataGridView1.DataSource = horarios;
                                     label2.Text = "Bienvenido " + nombreCompleto;
                                     mensualidad.Text = new Rules().ProximoPago(Usuario);
-
+                                    Log.WriteLog("Encontre horarios para - " + nombreCompleto);
                                     if (!String.IsNullOrEmpty(foto))
                                     {
                                         fotoGrafia.ImageLocation = @"c:\wamp\www\gym\fotos\" + foto;
                                     }
-
+                                    this.WindowState = FormWindowState.Normal;
                                 }
                             }
                             else if (Rol == "Instructor")
@@ -201,6 +175,8 @@ namespace Recepcion
                                 {
                                     fotoGrafia.ImageLocation = @"c:\wamp\www\gym\fotos\" + foto;
                                 }
+                                this.WindowState = FormWindowState.Normal;
+                                Log.WriteLog("Bienvenido Instructor - " + nombreCompleto);
                             }
 
 
@@ -209,18 +185,21 @@ namespace Recepcion
                         {
                             if (new Rules().registrarSalida(Usuario))
                             {
+                                Log.WriteLog("Se registro la salida - " + nombreCompleto);
                                 label2.Text = "Hasta pronto " + nombreCompleto;
 
                                 if (!String.IsNullOrEmpty(foto))
                                 {
                                     fotoGrafia.ImageLocation = @"c:\wamp\www\gym\fotos\" + foto;
                                 }
-
-                                clean();
+                                this.WindowState = FormWindowState.Normal;
+                                this.button2.Visible = true;
+                                
                             }
 
                         }
                         match = true;
+                        
                         break;
                     }
                     
@@ -229,47 +208,30 @@ namespace Recepcion
                 if(!match)
                 {
                     label4.Text = "Usuario no registrado, te invitamos a darte de alta";
-                    clean();
+                    Log.WriteLog("No se encontro ni un usuario");
+                    //clean();
+                    this.WindowState = FormWindowState.Normal;
                 }
-                //pictureBox1.Image = huella.Image;
-
-                //switch (template.Quality)
-                //{
-                //    case 0:
-                //        label4.Text = "Mala calidad intente nuevamente.";
-                //        dataGridView1.DataSource = null;
-                //        label2.Text = "";
-                //        //MessageBox.Show("Huella de mala calidad favor de volver a poner el dedo");
-                //        return;
-                //    case 1:
-                //        label4.Text = "Mediana calidad intente nuevamente.";
-                //        //MessageBox.Show("Huella de mala calidad favor de volver a poner el dedo");
-                //        dataGridView1.DataSource = null;
-                //        label2.Text = "";
-                //        return;
-                //    case 2:
-                        
-                        
-                //        break;
-                //}
+                
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+                Log.WriteLog(ex.Message);
             }
         }
 
         private void clean()
         {
-            int miliseconds = int.Parse(string.IsNullOrEmpty(config.AppSettings.Settings["Clean"].Value.ToString()) ? "8" : config.AppSettings.Settings["Clean"].Value.ToString());
-            System.Threading.Thread.Sleep(miliseconds * 1000);
+            //int miliseconds = int.Parse(string.IsNullOrEmpty(config.AppSettings.Settings["Clean"].Value.ToString()) ? "8" : config.AppSettings.Settings["Clean"].Value.ToString());
+            //System.Threading.Thread.Sleep(miliseconds * 1000);
             label2.Text = "";
             label3.Text = "";
             label4.Text = "";
             mensualidad.Text = "";
             dataGridView1.DataSource = null;
             fotoGrafia.ImageLocation = null;
-                        
+            //this.WindowState = FormWindowState.Minimized;            
         }
 
         void core_onStatus(object source, GriauleFingerprintLibrary.Events.StatusEventArgs se)
@@ -277,11 +239,11 @@ namespace Recepcion
             if (se.StatusEventType == GriauleFingerprintLibrary.Events.StatusEventType.SENSOR_PLUG)
             {
                 core.StartCapture(source);
-                mensajeBarraEstado.Text = "Lector Conectado";
+                //mensajeBarraEstado.Text = "Lector Conectado";
             }
             else
             {
-                mensajeBarraEstado.Text = "Lector Desconectado";
+                //mensajeBarraEstado.Text = "Lector Desconectado";
             }
         }
 
@@ -328,11 +290,14 @@ namespace Recepcion
                 {
                     if (new Rules().registrarEntrada(horarios, Usuario))
                     {
+                        Log.WriteLog("Se registro la Entrada Cliente");
+                        this.WindowState = FormWindowState.Minimized;
                         clean();
                         //panel2.Hide();
                     }
                     else
                     {
+                        Log.WriteLog("No se pudo registrar la entrada");
                         MessageBox.Show("No hemos podido registrar su entrada");
                     }
                 }
@@ -345,17 +310,20 @@ namespace Recepcion
             {
                 if (new Rules().registrarEntrada(Usuario))
                 {
+                    Log.WriteLog("Se Registro Entrada del Instructor");
+                    this.WindowState = FormWindowState.Minimized;
                     clean();
-
                         //panel2.Hide();
                 }
                 else
                 {
+                    Log.WriteLog("No se pudo registrar la entrada Instructor");
                      MessageBox.Show("No hemos podido registrar su entrada");
                 }
                 
             }
-            clean();
+            //this.WindowState = FormWindowState.Minimized;
+            //clean();
         }
 
         private void Identificacion_FormClosed(object sender, FormClosedEventArgs e)
@@ -369,6 +337,27 @@ namespace Recepcion
             { 
                 
             }
+        }
+
+        private void salirToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void salirToolStripMenuItem_Click_1(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void testToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Normal;
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Minimized;
+            clean();
         }
 
     }

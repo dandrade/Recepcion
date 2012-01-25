@@ -219,6 +219,7 @@ namespace Recepcion.Data
         
         public List<Horario> getHorarios(string day, string usuario)
         {
+            Log.WriteLog("Obteniendo Horarios.");
             string consulta = "select h.id, s.nombre, s.descripcion, h.inicio, h.fin, (select CONCAT(nombre, ' ', apellidoPaterno, ' ', apellidoMaterno)  from usuarios where id = h.instructor) as instructor from usuarios as u join servicios_usuarios as su on su.usuario = u.id join servicios as s on s.id = su.servicio join horarios as h on h.servicio = su.servicio where su.tipo = 'Cliente' and h."+day+" = 1 and u.id = "+usuario+" order by h.inicio";
             
             MySqlDataReader reader = Ejecutar.ExecuteSQL(consulta);
@@ -238,7 +239,7 @@ namespace Recepcion.Data
                 horarios.Add(horario);
 
             }
-
+            Log.WriteLog("Regresando los Horarios.");
             return horarios;
         }
 
@@ -259,7 +260,7 @@ namespace Recepcion.Data
                     result = "Out";
                 }
             }
-
+            Log.WriteLog("Verificando si va a entrar o a salir, resultado: " + result);
             return result;
         }
 
